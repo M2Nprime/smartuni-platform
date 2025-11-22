@@ -62,15 +62,35 @@ System Admin	 =   (multi-tenant) مدیریت کاربران و مدیریت
 
 
 🏗️ 4. System Services (Microservices)
+
+
 Service	Responsibility
+
+
 API Gateway	ورودی واحد، امنیت، Rate Limit، Routing
+
+
 Auth Service	ثبت‌نام، ورود، JWT، RBAC، مدیریت tenant
+
+
 Resource & Booking	مدیریت اتاق، سالن، رزرو و جلوگیری از Overbooking
+
+
 Marketplace	مدیریت محصولات و فروش بلیط
+
+
 Order/Inventory	مدیریت سفارش‌ها و موجودی (پایهٔ آینده Saga)
+
+
 E-learning	ایجاد آزمون توسط استاد و شروع آزمون
+
+
 Notification	ارسال اعلان، ایمیل، پیام
+
+
 IoT Service	سنسورها، دمای کلاس، نقشه شاتل
+
+
 BFF Layer	ساده‌سازی API برای Frontend
 
 
@@ -119,6 +139,10 @@ flowchart TB
 
 
     APIGW -->|Send Email/SMS| ExternalEmail
+
+
+   <img width="1536" height="1024" alt="a6835882-2242-4b21-ba39-5c34f76ad3b7" src="https://github.com/user-attachments/assets/6c0999f8-ec19-4d88-bc4b-201f93e97d88" />
+
 
 
 🔗 6. System Communication
@@ -269,19 +293,46 @@ React + Vite
 (Next.js in future)
 
 🗂️ 12. Repository Structure (Monorepo)
+
+
 /smartuni-platform
+
+
    /gateway
+
+   
    /auth-service
+
+   
    /resource-service
+
+   
    /marketplace-service
+
+   
    /order-service
+
+   
    /elearn-service
+
+   
    /notification-service
+
+   
    /iot-service
+
+   
    /bff
+
+   
    /common-libs
+
+   
    docker-compose.yml
+
+   
    README.md
+   
 
 📝 13. Architecture Decision Records (ADR)
 ADR-001 – Microservices Architecture انتخاب
