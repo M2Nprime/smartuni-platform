@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build: ./auth-service
+    platform: linux/amd64 
+    ports:
+      - "4001:4001"
+    environment:
+      - PORT=4001
+      - JWT_SECRET=my_super_secret_key
+
+  resource-service:
+    build: ./resource-service
+    platform: linux/amd64 
+    ports:
+      - "4002:4002"
+    environment:
+      - PORT=4002
+      - JWT_SECRET=my_super_secret_key
+
+  gateway:
+    build: ./gateway
+    platform: linux/amd64 
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - AUTH_URL=http://auth-service:4001
+      - RESOURCE_URL=http://resource-service:4002
+    depends_on:
+      - auth-service
+      - resource-service
