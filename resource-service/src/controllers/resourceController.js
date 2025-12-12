@@ -8,6 +8,11 @@ const Booking = require("../models/Booking");
  */
 exports.createResource = async (req, res) => {
   try {
+    
+    if (req.user.role !== 'admin' && req.user.role !== 'professor') {
+        return res.status(403).json({ message: "Access denied. Only professors or admins can create resources." });
+    }
+
     const { title, description, fileUrl, type, capacity } = req.body;
 
     // Validate required fields
