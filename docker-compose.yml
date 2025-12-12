@@ -3,7 +3,7 @@ version: '3.8'
 services:
   auth-service:
     build: ./auth-service
-    platform: linux/amd64 
+    platform: linux/amd64
     ports:
       - "4001:4001"
     environment:
@@ -12,7 +12,7 @@ services:
 
   resource-service:
     build: ./resource-service
-    platform: linux/amd64 
+    platform: linux/amd64
     ports:
       - "4002:4002"
     environment:
@@ -21,7 +21,7 @@ services:
 
   gateway:
     build: ./gateway
-    platform: linux/amd64 
+    platform: linux/amd64
     ports:
       - "3000:3000"
     environment:
@@ -31,3 +31,19 @@ services:
     depends_on:
       - auth-service
       - resource-service
+
+  rabbitmq:
+    image: rabbitmq:3.11-management
+    container_name: smartuni-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
