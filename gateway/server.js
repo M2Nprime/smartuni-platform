@@ -2,18 +2,18 @@ const express = require("express");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 
 const app = express();
-const PORT = 3000; // The port the client interacts with
+const PORT = process.env.PORT || 3000;
 
-// 1. Route requests starting with /auth to the Auth Service (4001)
+// Proxy Configuration: Auth Service
 app.use(
   "/auth",
   createProxyMiddleware({
     target: process.env.AUTH_URL || "http://localhost:4001",
-    changeOrigin: true, // Needed for virtual hosted sites
+    changeOrigin: true,
   })
 );
 
-// 2. Route requests starting with /resources to the Resource Service (4002)
+// Proxy Configuration: Resource Service
 app.use(
   "/resources",
   createProxyMiddleware({
@@ -22,11 +22,12 @@ app.use(
   })
 );
 
-// Gateway Health Check / Root Route
+// Health Check Endpoint
 app.get("/", (req, res) => {
-  res.send("API Gateway is Running on Port 3000 🚀");
+  res.send("API Gateway is running 🚀");
 });
 
+// Start the Gateway
 app.listen(PORT, () => {
-  console.log(`Gateway running on http://localhost:${PORT}`);
+  console.log(`API Gateway running on http://localhost:${PORT}`);
 });

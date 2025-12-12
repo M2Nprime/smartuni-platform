@@ -1,14 +1,20 @@
 {
-  "name": "auth-service",
+  "name": "smartuni-auth-service",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Authentication Service with JWT and SQLite",
+  "main": "src/server.js",
   "scripts": {
+    "start": "node src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "auth",
+    "jwt",
+    "microservice",
+    "express"
+  ],
+  "author": "M2n",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",

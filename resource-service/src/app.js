@@ -1,15 +1,19 @@
 const express = require("express");
+
+// Import Routes
+const resourceRoutes = require("./routes/resourceRoutes");
+
 const app = express();
 
-app.use(express.json());
+// Middleware Configuration
+app.use(express.json()); // Parse incoming JSON requests
 
-// Routes
-const resourceRoutes = require("./routes/resourceRoutes");
-app.use("/", resourceRoutes);
+// Route Registration
+app.use("/", resourceRoutes); // Mount resource routes
 
-// Base route
+// Health Check Endpoint
 app.get("/", (req, res) => {
-    res.json({ message: "Resource Service is running" });
+  res.status(200).json({ message: "Resource Service is running" });
 });
 
 module.exports = app;

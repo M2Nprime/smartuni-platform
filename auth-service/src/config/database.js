@@ -1,10 +1,10 @@
 const { Sequelize } = require("sequelize");
 
-// اتصال به SQLite
+// Initialize SQLite Database
 const sequelize = new Sequelize({
-    dialect: "sqlite",
-    storage: "./auth.db",   // دیتابیس در فایل auth.db ساخته می‌شود
-    logging: false
+  dialect: "sqlite",
+  storage: process.env.DB_PATH || "./auth.db", // Storage file location
+  logging: false, // Disable console logging for cleaner output
 });
 
 module.exports = sequelize;

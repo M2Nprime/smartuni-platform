@@ -1,140 +1,174 @@
 const Resource = require("../models/Resource");
-const Booking = require("../models/Booking"); // Import the new Booking model
+const Booking = require("../models/Booking");
 
-// --------------------- CREATE RESOURCE ---------------------
+/**
+ * @desc    Create a new resource (Course, Lab, Video)
+ * @route   POST /resources
+ * @access  Private (Admin/Teacher)
+ */
 exports.createResource = async (req, res) => {
-    try {
-        const { title, description, fileUrl, type, capacity } = req.body;
+  try {
+    const { title, description, fileUrl, type, capacity } = req.body;
 
-        if (!title || !fileUrl || !type) {
-            return res.status(400).json({ message: "Missing required fields" });
-        }
-
-        const resource = await Resource.create({
-            title,
-            description,
-            fileUrl,
-            type,
-            capacity: capacity || 20, // Default to 20 if not sent
-            uploadedBy: req.user.id
-        });
-
-        res.status(201).json({ message: "Resource created", resource });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+    // Validate required fields
+    if (!title || !fileUrl || !type) {
+      return res.status(400).json({ message: "Title, fileUrl, and type are required" });
     }
+
+    // Create Resource in DB
+    const resource = await Resource.create({
+      title,
+      description,
+      fileUrl,
+      type,
+      capacity: capacity || 20, // Default capacity
+      uploadedBy: req.user.id, // Extracted from JWT token
+    });
+
+    res.status(201).json({
+      message: "Resource created successfully",
+      resource,
+    });
+  } catch (err) {
+    console.error("Create Resource Error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
-// --------------------- BOOK A RESOURCE (NEW Logic) ---------------------
+/**
+ * @desc    Book a resource for a student
+ * @route   POST /resources/:id/book
+ * @access  Private (Student)
+ */
 exports.bookResource = async (req, res) => {
-    try {
-        const { id } = req.params; // Resource ID from URL
-        const userId = req.user.id; // User ID from Token
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
 
-        // 1. Find the resource
-        const resource = await Resource.findByPk(id);
-        if (!resource) {
-            return res.status(404).json({ message: "Resource not found" });
-        }
-
-        // 2. Check Capacity
-        if (resource.bookedCount >= resource.capacity) {
-            return res.status(400).json({ message: "Class is full!" });
-        }
-
-        // 3. Check for Duplicate Booking
-        const existingBooking = await Booking.findOne({ where: { userId, resourceId: id } });
-        if (existingBooking) {
-            return res.status(400).json({ message: "You have already booked this resource" });
-        }
-
-        // 4. Create Booking
-        await Booking.create({
-            userId,
-            resourceId: id
-        });
-
-        // 5. Update Resource Counter
-        resource.bookedCount += 1;
-        await resource.save();
-
-        res.json({ message: "Booking successful!", bookedCount: resource.bookedCount });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+    // Step 1: Find the resource
+    const resource = await Resource.findByPk(id);
+    if (!resource) {
+      return res.status(404).json({ message: "Resource not found" });
     }
+
+    // Step 2: Check Capacity
+    if (resource.bookedCount >= resource.capacity) {
+      return res.status(400).json({ message: "Class is full!" });
+    }
+
+    // Step 3: Check for Duplicate Booking
+    const existingBooking = await Booking.findOne({
+      where: { userId, resourceId: id },
+    });
+
+    if (existingBooking) {
+      return res.status(400).json({ message: "You have already booked this resource" });
+    }
+
+    // Step 4: Create Booking Record
+    await Booking.create({
+      userId,
+      resourceId: id,
+    });
+
+    // Step 5: Update Resource Counter (Atomic increment is better in production)
+    resource.bookedCount += 1;
+    await resource.save();
+
+    res.status(200).json({
+      message: "Booking successful!",
+      bookedCount: resource.bookedCount,
+    });
+  } catch (err) {
+    console.error("Booking Error:", err);
+    res.status(500).json({ message: "Server error during booking" });
+  }
 };
 
-// --------------------- GET ALL RESOURCES ---------------------
+/**
+ * @desc    Get all resources
+ * @route   GET /resources
+ * @access  Public
+ */
 exports.getAllResources = async (req, res) => {
-    try {
-        const resources = await Resource.findAll();
-        res.json(resources);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
+  try {
+    const resources = await Resource.findAll();
+    res.status(200).json(resources);
+  } catch (err) {
+    console.error("Get All Resources Error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
-// --------------------- GET RESOURCE BY ID ---------------------
+/**
+ * @desc    Get single resource by ID
+ * @route   GET /resources/:id
+ * @access  Public
+ */
 exports.getResourceById = async (req, res) => {
-    try {
-        const resource = await Resource.findByPk(req.params.id);
-        if (!resource) {
-            return res.status(404).json({ message: "Resource not found" });
-        }
-        res.json(resource);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+  try {
+    const resource = await Resource.findByPk(req.params.id);
+    if (!resource) {
+      return res.status(404).json({ message: "Resource not found" });
     }
+    res.status(200).json(resource);
+  } catch (err) {
+    console.error("Get Resource Error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
-// --------------------- UPDATE RESOURCE ---------------------
+/**
+ * @desc    Update resource details
+ * @route   PUT /resources/:id
+ * @access  Private (Owner/Admin)
+ */
 exports.updateResource = async (req, res) => {
-    try {
-        const resource = await Resource.findByPk(req.params.id);
-        if (!resource) return res.status(404).json({ message: "Resource not found" });
+  try {
+    const resource = await Resource.findByPk(req.params.id);
+    if (!resource) return res.status(404).json({ message: "Resource not found" });
 
-        if (resource.uploadedBy !== req.user.id && req.user.role !== "admin") {
-            return res.status(403).json({ message: "Not allowed" });
-        }
-
-        const { title, description, fileUrl, type, capacity } = req.body;
-        
-        resource.title = title || resource.title;
-        resource.description = description || resource.description;
-        resource.fileUrl = fileUrl || resource.fileUrl;
-        resource.type = type || resource.type;
-        if(capacity) resource.capacity = capacity;
-
-        await resource.save();
-        res.json({ message: "Resource updated", resource });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+    // Check Ownership or Admin Role
+    if (resource.uploadedBy !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied. You are not the owner." });
     }
+
+    const { title, description, fileUrl, type, capacity } = req.body;
+
+    // Update fields if provided
+    resource.title = title || resource.title;
+    resource.description = description || resource.description;
+    resource.fileUrl = fileUrl || resource.fileUrl;
+    resource.type = type || resource.type;
+    if (capacity) resource.capacity = capacity;
+
+    await resource.save();
+    res.status(200).json({ message: "Resource updated successfully", resource });
+  } catch (err) {
+    console.error("Update Resource Error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
-// --------------------- DELETE RESOURCE ---------------------
+/**
+ * @desc    Delete a resource
+ * @route   DELETE /resources/:id
+ * @access  Private (Owner/Admin)
+ */
 exports.deleteResource = async (req, res) => {
-    try {
-        const resource = await Resource.findByPk(req.params.id);
-        if (!resource) return res.status(404).json({ message: "Resource not found" });
+  try {
+    const resource = await Resource.findByPk(req.params.id);
+    if (!resource) return res.status(404).json({ message: "Resource not found" });
 
-        if (resource.uploadedBy !== req.user.id && req.user.role !== "admin") {
-            return res.status(403).json({ message: "Not allowed" });
-        }
-
-        await resource.destroy();
-        res.json({ message: "Resource deleted" });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+    // Check Ownership or Admin Role
+    if (resource.uploadedBy !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied. You are not the owner." });
     }
+
+    await resource.destroy();
+    res.status(200).json({ message: "Resource deleted successfully" });
+  } catch (err) {
+    console.error("Delete Resource Error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 };

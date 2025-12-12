@@ -1,14 +1,20 @@
 {
-  "name": "gateway",
+  "name": "smartuni-gateway",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "API Gateway for Smart University Microservices",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "microservices",
+    "gateway",
+    "proxy",
+    "express"
+  ],
+  "author": "M2n",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "express": "^5.2.1",
     "http-proxy-middleware": "^3.0.5"
