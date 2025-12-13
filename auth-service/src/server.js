@@ -1,6 +1,11 @@
+
+
 require("dotenv").config();
 const app = require("./app");
 const sequelize = require("./config/database");
+const { connectRabbitMQ } = require("./config/rabbitmq");
+
+
 
 // Import Models
 require("./models/User");
@@ -12,6 +17,9 @@ async function start() {
     // Sync Database
     await sequelize.sync();
     console.log("Database synced successfully");
+
+    // Connect to RabbitMQ
+    await connectRabbitMQ();
 
     // Start Server
     app.listen(PORT, () => {
