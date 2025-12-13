@@ -47,3 +47,12 @@ services:
 networks:
   app-network:
     driver: bridge
+    
+  order-service:
+    build: ./order-service
+    ports:
+      - "4003:4003"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+    depends_on:
+      - rabbitmq
