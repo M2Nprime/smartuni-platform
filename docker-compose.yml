@@ -9,6 +9,8 @@ services:
     environment:
       - PORT=4001
       - JWT_SECRET=my_super_secret_key
+    networks:
+      - app-network
 
   resource-service:
     build: ./resource-service
@@ -18,6 +20,8 @@ services:
     environment:
       - PORT=4002
       - JWT_SECRET=my_super_secret_key
+    networks:
+      - app-network
 
   gateway:
     build: ./gateway
@@ -31,6 +35,8 @@ services:
     depends_on:
       - auth-service
       - resource-service
+    networks:
+      - app-network
 
   rabbitmq:
     image: rabbitmq:3.11-management
