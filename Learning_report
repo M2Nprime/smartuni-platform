@@ -1,0 +1,227 @@
+گزارش – Order-Service و پیاده‌سازی Saga
+مقدمه
+
+بخش A پروژه SmartUni Platform شامل توسعه سرویس Order-Service و پیاده‌سازی Saga است. هدف اصلی این بخش، ایجاد یک سرویس واحد برای مدیریت سفارش‌ها و هماهنگی تراکنش‌ها میان زیرسیستم‌ها (Inventory و Payment) با استفاده از معماری Saga Pattern و Spring Boot می‌باشد.
+در این بخش تلاش شد سرویس Order-Service به گونه‌ای طراحی شود که بتواند درخواست‌ها را دریافت کرده، جریان سفارش را مدیریت کرده و پیام‌ها را از طریق RabbitMQ میان سرویس‌ها منتقل کند.
+
+اهداف
+
+ایجاد سرویس Order-Service با قابلیت دریافت سفارش‌ها از طریق یک REST API (POST /orders/create).
+پیاده‌سازی Saga Pattern برای مدیریت تراکنش‌های پیچیده و هماهنگی میان Inventory و Payment.
+اتصال سرویس به RabbitMQ برای ارتباط ناهمزمان میان سرویس‌ها.
+آماده‌سازی سرویس برای اجرای مستقل و قابلیت داکرایز شدن در محیط توسعه و تولید.
+
+مراحل انجام کار
+
+1_راه‌اندازی پروژه
+
+پروژه SmartUni Platform از گیت کلون شد و سرویس Order-Service در پوشه مربوطه قرار گرفت.
+تنظیمات پورت (4003) و اتصال به RabbitMQ (localhost:5672) در application.properties انجام شد.
+
+2_پیاده‌سازی Saga
+
+کلاس‌های مربوط به Saga مانند InventoryService و PaymentService به عنوان Service در پروژه تعریف شدند.
+جریان تراکنش‌ها با استفاده از کلاس OrderSagaOrchestrator مدیریت شد.
+
+
+3_ساخت Controller
+
+کلاس OrderController با یک endpoint POST /orders/create ایجاد شد که درخواست‌های ورودی را دریافت کرده و Saga را شروع می‌کند.
+
+4_تست محلی
+
+سرویس با استفاده از Maven (mvn) spring-boot:run اجرا شد.
+تست endpoint با PowerShell و دستور Invoke-RestMethod انجام شد و پیام “Saga started for orderId = 123” نمایش داده شد، که نشان‌دهنده عملکرد صحیح سرویس بود.
+
+5_داکرایز کردن سرویس
+
+برای سرویس یک Dockerfile اختصاصی جاوا نوشته شد.
+اتصال به RabbitMQ از طریق تنظیمات استاندارد Spring Boot برقرار شد.
+
+چالش‌ها و حل آن‌ها
+
+اتصال به RabbitMQ در محیط محلی گاهی با خطا مواجه شد که با بررسی و راه‌اندازی کانتینر Docker مربوطه رفع شد.
+در ابتدا اجرای endpoint با مرورگر خطای Method Not Allowed می‌داد، زیرا endpoint فقط POST را پشتیبانی می‌کرد. تست با PowerShell رفع شد.
+مسائل امنیتی اولیه در Spring Security با غیر فعال کردن موقت CSRF برای محیط توسعه برطرف شد.
+
+نتیجه‌گیری
+
+سرویس Order-Service با موفقیت ایجاد و به پروژه SmartUni Platform اضافه شد.
+Saga Pattern به درستی برای مدیریت تراکنش‌های بین Inventory و Payment پیاده‌سازی شد.
+اتصال به RabbitMQ برقرار شد و سرویس به صورت مستقل اجرا و تست شد.
+این بخش آماده ادغام با سایر سرویس‌ها و اجرای کامل در محیط Docker Compose است
+پیاده سازی Breaker Circuit برای سرویس اطلاعرسانی
+
+
+هدف از این پروژه، پیادهسازی مکانیزم Breaker Circuit  به منظور افزایش پایداری و قابلیت اطمینان
+سیستمهای توزیع شده بود. سرویس اطلاعرسانی بخش حیاتی پلتفرم آموزش آنلاین است و خرابی یا تأخیر در پاسخدهی آن میتواند باعث ایجاد خطاهای زنجیرهای در سرویسهای بالادستی شود
+
+با استفاده ازNode.js و کتابخانه Opossum ، Circuit Breaker در مسیر درخواستها قرار گرفت تا
+تأخیرها، خطاها و پاسخهای کند را به شکل مناسبی مدیریت کند. 
+ 
+
+
+آزمایشهای تزریق خطا
+آزمایش ۱ — خاموش شدن سرویس
+روش:
+سرویس اطلاع رسانی به طور کامل متوقف شد تا یک قطع کامل سرویس شبیه سازی شود. مشاهده:
+•  مرورگر پیام connect” to “Unableرا نمایش داد و هیچ پاسخی دریافت نشد.
+:Circuit Breakerرفتار  
+•  بلافاصله در وضعیت OPEN قرار گرفت
+•  Fallback  برای هر درخواست اجرا شد
+•  در کنسول، وضعیت OPEN ثبت شد
+
+ 
+Timeout —
+ 
+آزمایش2
+روش:
+ 
+Timeout Circuit
+ 
+تاخیر ۵ ثانیه ای مصنوعی به /notify endpoint اضافه شد در حالی که Breakerبرابر ۳ ثانیه بود.
+مشاهده:
+ 
+•  درخواستها بیش از زمان تعیین شده طول کشید و به عنوان خطا در نظر گرفته شدند.
+:Circuit Breakerرفتار  
+•  پس از گذشت Timeout ، در وضعیت OPENقرار گرفت
+•  Fallback  به کاربر بازگشت
+•  پس از ۵ ثانیه (resetTimeout) وضعیت به HALF-OPEN  تغییر کرد
+
+ 
+برگشت  OPEN  
+ 
+• در صورت بروز خطا مجدد، مجدداً به کنسول، لاگهایی مانند زیر نشان داد:
+Circuit breaker OPENED!
+Circuit breaker HALF-OPEN!
+ 
+
+
+آزمایش ۳ — سرویس کند با خطاهای جزئی
+روش:
+Endpoint  طوری تنظیم شد که:
+ 
+تاخیر ۱.۵ ثانیه ای داشته باشد
+٪۳۰ درخواستها به طور تصادفی با خطا مواجه شوند
+
+
+برخی درخواستها موفق بودند
+برخی به دلیل تأخیر یا خطاهای مصنوعی ناموفق بودند
+ 
+
+•
+
+مشاهده:
+•
+
+ 
+•  زمانی که نرخ خطا از ٪۵۰ فراتر رفت، Breaker Circuit  فعال شد
+:Circuit Breakerرفتار  
+•  چندین پاسخ Fallback ارائه شد 
+
+
+آموخته ها
+•  Breaker  Circuit به طور قابل توجهی مقاومت سیستمهای توزیعشده را افزایش میدهد.
+•  تنظیم آستانههای Timeout و درصد خطا باید بر اساس رفتار واقعی سرویس انجام شود.
+•  استراتژیهای Fallback تجربه کاربری را در هنگام قطعی سرویس حفظ میکنند.
+•  ثبت و مانیتورینگ تغییر وضعیتها برای بررسی عملکرد سیستم ضروری است.
+•  کتابخانه Opossumروشی ساده و مؤثر برای پیادهسازی الگوهای مقاومتی در Node.js ارائه
+میدهد.
+
+
+
+گزارش
+معماری رویدادمحور (Event-Driven Architecture)
+.1 مقدمه
+در این گزارشکار، فرآیند پیادهسازی یک سیستم پیامرسانی مبتنی بر معماری رویدادمحور مورد بررسی قرار میگیرد.
+هدف اصلی این پروژه، آشنایی با مفاهیمی نظیر Broker Message، الگوی Producer/Consumer و نحوه
+مدیریت جریان رویدادها در قالب الگوی Saga با استفاده از RabbitMQ است. این نوع معماری با فراهمسازی امکان
+مقیاسپذیری، جداسازی مناسب سرویسها و بهبود مدیریت تراکنشهای توزیعشده، نقش مهمی در طراحی سیستمهای نرمافزاری مدرن ایفا میکند
+
+.2 ساختار کلی پروژه
+ساختار پروژه بهصورت ماژولار طراحی شده و شامل بخشهای زیر است:
+MessagingProject/
+│
+├── docker-compose.rabbitmq.yml
+│
+├── services/
+│	├── producer/
+│	│	├── producer.js
+│	│	└── package.json
+│	│
+│	├── inventory/
+│	│	└── consumer.js
+│	│
+│	├── payment/
+│	│	└── consumer.js
+│	│
+│	└── order/
+│	└── consumer.js
+│
+├── schemas/
+│	├── order.created.schema.json
+│	├── inventory.reserved.schema.json
+│	├── payment.charged.schema.json
+│	└── order.completed.schema.json
+│
+└── tests/
+└── e2e.test.js
+هر سرویس مسئول پردازش یک مرحله مشخص از جریان سفارش است و از طریق پیامها با سایر سرویسها ارتباط برقرار میکند.
+
+ 
+RabbitMQ (Message Broker)راه اندازی .3
+برای مدیریت پیامها از RabbitMQ استفاده شده است که با Docker اجرا میشود.
+Broker:اجرای
+docker compose -f docker-compose.rabbitmq.yml up -d
+دسترسی به پنل مدیریتی - :آدرس - http://localhost:15672 :نام کاربری - guest :رمز عبورguest :
+: - ها topic - Queueنوع از app.events نام با RabbitMQ: - Exchange در تعریفشده اجزای
+: - order.created - هاinventory.events - payment.events - order.events - Routing Key
+inventory.reserved - payment.charged - order.completed
+
+consumer - Producer .4
+Producerوظیفه ارسال پیام اولیه سفارش را بر عهده دارد.
+مسیر فایل:
+services/producer/producer.js
+Producer:اجرای
+node producer.js
+(order.created): - message_id - correlation_id - timestamp - order_id ارسالی پیام محتوای
+- items - total_amount
+
+.5 consumer - پردازش رویدادها
+سه Consumer مستقل برای پردازش مراحل مختلف جریان Saga پیادهسازی شدهاند:
+: inventory.reservedخروجی: order.created - ورودیInventory Service -
+: payment.chargedخروجی: inventory.reserved - ورودیPayment Service -
+: order.completedخروجی: payment.charged - ورودیOrder Service -
+اجرای سرویسها( هرکدام در یک ترمینال جداگانه):
+cd services/inventory node consumer.js
+
+cd services/payment node consumer.js
+
+cd services/order node consumer.js
+ 
+ 
+JSON Schema .6
+برای استانداردسازی ساختار پیامها و جلوگیری از بروز خطا، از Schema JSON استفاده شده است .فایلهای موجود عبارتاند از:
+order.created.schema.json • inventory.reserved.schema.json • payment.charged.schema.json • order.completed.schema.json •
+این فایلها نوع دادهها، ساختار و مقادیر مورد انتظار هر پیام را مشخص میکنند.
+
+End-to-Endو Integration تست .7
+برای بررسی صحت عملکرد کل سیستم، تست End-to-End طراحی شده است.
+مسیر فایل تست:
+tests/e2e.test.js
+اجرای تست:
+cd tests node e2e.test.js
+مراحل انجامشده در تست 1. :اتصال به 2. RabbitMQ ارسال پیام 3. order.created دریافت پیام توسط
+payment.charged انتشار و Payment توسط پیام دریافت inventory.reserved 4. انتشار وInventory
+5.دریافت پیام توسط Order و انتشارorder.completed
+در صورت مشاهده صحیح پیامها در ترمینال سرویسها، عملکرد سیستم تأیید میشود.
+
+.8 نکات مهم برای اجرا
+•  هر سرویس باید در یک ترمینال مجزا اجرا شود.
+•  RabbitMQباید پیش از اجرای Producer و تستها فعال باشد.
+•  پورتهای 5672 و 15672 نباید توسط برنامه دیگری اشغال شده باشند.
+•  فایلهای Schema JSON صرفا˝ برای مستندسازی و اعتبارسنجی ساختار پیامها استفاده میشوند.
+
+.9 نتیجه گیری
+در این پروژه، یک سیستم مبتنی بر معماری رویدادمحور با استفاده از RabbitMQ پیادهسازی شد .این معماری با جداسازی مسئولیتها و استفاده از پیامها، امکان توسعهپذیری، تستپذیری و مدیریت بهتر فرآیندهای توزیعشده را فراهم میکند و نمونهای عملی از الگوی Saga در سیستمهای میکروسرویسی محسوب میشود.
+
